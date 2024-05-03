@@ -59,7 +59,7 @@ def PageRank(G):
                 tree.insert("", "end", text="", values=(node, round(score, 3)))
 
         ax.clear()
-        nx.draw(G, pos, with_labels=True, node_color=node_colors,node_size=2000, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+        nx.draw(G, pos, with_labels=True, node_color=node_colors,node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
         plt.title("Graph")
         canvas.draw()
 
@@ -69,7 +69,6 @@ def PageRank(G):
     root.mainloop()
 #===========================================================================================
 def Degree_Centrality(G):
-
     # Calculate degree centrality
     dc = nx.degree_centrality(G)
     node_degrees = dict(G.degree())
@@ -101,8 +100,9 @@ def Degree_Centrality(G):
     pos = nx.spring_layout(G)
     fig, ax = plt.subplots(figsize=(12, 10))
 
+    node_size = [dc[node] * 1000 for node in G.nodes()]
 
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=1000, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
     plt.title("Graph")
 
     canvas = FigureCanvasTkAgg(fig, master=right_frame)
@@ -132,7 +132,7 @@ def Degree_Centrality(G):
 
         #H = G.subgraph([n for n in G.nodes() if dc[n] >= num])
         ax.clear()
-        nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=1000, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+        nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
         plt.title("Graph")
         canvas.draw()
     # Bind the search button to the filter_nodes function
@@ -162,9 +162,10 @@ def Closeness_Centrality(G):
     tree.heading("Node", text="Node")
     tree.heading("Closeness Centrality", text="Closeness Centrality")
 
+    node_size = [cc[node] * 1000 for node in G.nodes()]
     pos = nx.spring_layout(G)
     fig, ax = plt.subplots(figsize=(12, 10))
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=1000, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
     plt.title("Graph")
 
     canvas = FigureCanvasTkAgg(fig, master=right_frame)
@@ -191,7 +192,7 @@ def Closeness_Centrality(G):
         # Filter and draw the subgraph
         #H = G.subgraph([n for n in G.nodes() if cc[n] >= num])
         ax.clear()
-        nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=1000, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+        nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
         plt.title("Graph")
         canvas.draw()
     search_button.config(command=filter_nodes)
@@ -223,7 +224,7 @@ def Betweenness_Centrality(G):
     tree.grid(row=2, column=0, columnspan=3)
     pos = nx.spring_layout(G)
     fig, ax = plt.subplots(figsize=(12, 10))
-    node_size = [bc[node] * 10000 for node in G.nodes()]
+    node_size = [bc[node] * 1000 for node in G.nodes()]
     nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
     plt.title("Graph")
 
@@ -235,17 +236,11 @@ def Betweenness_Centrality(G):
         betweenness_source = bc[source]
         tree.insert("", "end", text="", values=(target, source, round(betweenness_source, 3)))
 
-
     def filter_nodes():
         # Clear the previous selection
         tree.delete(*tree.get_children())
-
         # Get the filter threshold
-        if search_entry.get():
-            num = float(search_entry.get())
-        else:
-            return
-
+        num = float(search_entry.get())
         # Initialize colors for nodes
         node_colors = ['skyblue' if bc[node] >= num else 'lightgray' for node in G.nodes()]
 
@@ -257,10 +252,10 @@ def Betweenness_Centrality(G):
 
         #H = G.subgraph([n for n in G.nodes() if bc[n] >= num])
         ax.clear()
-        nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=2000, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+        nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
         plt.title("Graph")
         canvas.draw()
-        search_button.config(command=filter_nodes)
+    search_button.config(command=filter_nodes)
     # Start the Tkinter event loop
     root.mainloop()
 #===========================================================================================
@@ -319,6 +314,9 @@ def compare_community_detection(G):
     root.mainloop()
 #===========================================================================================
 def partition_graph(G, algorithm='louvain'):
+    if nx.is_directed(G):
+        G=nx.to_undirected(G)
+
     if G.number_of_edges() == 0:
         print("Error: Graph has no edges.")
         return
@@ -329,6 +327,8 @@ def partition_graph(G, algorithm='louvain'):
     visualize_clusters_gui(G,clusters,com,results[0],results[1],results[2])
 #===========================================================================================
 def visualize_clusters(G, clusters):
+    if nx.is_directed(G):
+        G=nx.to_undirected(G)
     # Convert sets to lists
     clusters = [list(cluster) for cluster in clusters]
     node_to_cluster = {node: cluster_idx for cluster_idx, cluster in enumerate(clusters) for node in cluster}
@@ -337,7 +337,8 @@ def visualize_clusters(G, clusters):
     nx.draw(G, pos,with_labels=True ,node_color=colors,node_size=1000,font_size=10, edge_color='gray' ,cmap=plt.cm.tab20)
 #===========================================================================================
 def visualize_clusters_gui(G, clusters,num_communities,Modularity,NMI,ARI):
-
+    if nx.is_directed(G):
+        G=nx.to_undirected(G)
     root = tk.Tk()
     root.title("Graph Clustering Visualization")
     left_frame = tk.Frame(root)
@@ -373,6 +374,9 @@ def visualize_clusters_gui(G, clusters,num_communities,Modularity,NMI,ARI):
     root.mainloop()
 #===========================================================================================
 def evaluate_clustering(graph, algorithm='louvain'):
+
+    if nx.is_directed(graph):
+        graph=nx.to_undirected(graph)
     # Ground truth (if available)
     # Add ground truth communities as node attributes for evaluation (optional)
     ground_truth_communities = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 1, 9: 0,
