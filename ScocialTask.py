@@ -29,7 +29,6 @@ def load_network(node_path, edges_path):
     return G
 
 # Function to update node colors and labels based on selected column and class
-
 def calculate_metrics(graph):
 
     if nx.is_empty(graph):
@@ -75,7 +74,6 @@ def calculate_node_size_degrees(G):
 
     nx.set_node_attributes(G, node_sizes, name='node_size')
 
-
 def create_main_window():
     def radio_click1():
         global G
@@ -87,9 +85,9 @@ def create_main_window():
     root = tk.Tk()
     root.title("Graph Viewer")
     left_frame = tk.Frame(root )
-    left_frame.pack(side="left", pady=5,fill='both', expand=True)
+    left_frame.pack(side="left",fill='both')
     right_frame = tk.Frame(root)
-    right_frame.pack(side="right", pady=2,fill='both', expand=True)
+    right_frame.pack(side="right",fill='both')
 
     #add canvas to display graph
     global pos
@@ -155,33 +153,35 @@ def create_main_window():
                                     *['skyblue','Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple', 'Cyan'])
     node_color_menu.grid(row=8, column=1)
 
-    submit_button = tk.Button(left_frame, text="Submit Changes ",bg="Green",font=("Helvetica", 9))
-    submit_button.grid(row=9, column=1)
-
-    space = tk.Label(left_frame)
-    space.grid(row=10, column=0)
-
-    fr_layout_button = tk.Button(left_frame, text=" Fruchterman La/yout")
-    fr_layout_button.grid(row=11, column=1)
-
-    random_layout_button = tk.Button(left_frame, text="Random Layout")
-    random_layout_button.grid(row=11, column=3)
-
-    tree_layout_button = tk.Button(left_frame, text="Tree Layout")
-    tree_layout_button.grid(row=11, column=0)
-    x = tk.Label(left_frame)
-    x.grid(row=12, column=0)
-
-    edge_size_label = tk.Label(left_frame, text="Edge Size: ")
-    edge_size_label.grid(row=13, column=0)
+    edge_size_label = tk.Label(left_frame, text="Edge Size : ")
+    edge_size_label.grid(row=9, column=0)
 
     edge_size_var = tk.IntVar(left_frame)
     edge_size_var.set(1)
     edge_size_spinbox = tk.Spinbox(left_frame, from_=0.5, to=10, increment=0.1, textvariable=edge_size_var)
-    edge_size_spinbox.grid(row=13, column=1)
+    edge_size_spinbox.grid(row=9, column=1)
 
-    calculate_degrees_button = tk.Button(left_frame, text="Change Edge Size ",command=lambda: calculate_node_size_degrees(ax))
-    calculate_degrees_button.grid(row=13, column=0)
+    calculate_degrees_button = tk.Label(left_frame, text="Change Edge Size ")
+    calculate_degrees_button.grid(row=9, column=0)
+
+    space = tk.Label(left_frame)
+    space.grid(row=10, column=0)
+
+    submit_button = tk.Button(left_frame, text="Submit Changes ",bd=5,bg="Green",font=("Helvetica", 9))
+    submit_button.grid(row=11)
+
+
+
+    fr_layout_button = tk.Button(left_frame, text=" Fruchterman La/yout")
+    fr_layout_button.grid(row=12, column=1)
+
+    random_layout_button = tk.Button(left_frame, text="Random Layout")
+    random_layout_button.grid(row=12, column=3)
+
+    tree_layout_button = tk.Button(left_frame, text="Tree Layout")
+    tree_layout_button.grid(row=12, column=0)
+    x = tk.Label(left_frame)
+    x.grid(row=13, column=0)
 
     space = tk.Label(left_frame)
     space.grid(row=14, column=0)
@@ -197,8 +197,6 @@ def create_main_window():
 
     Avg = tk.Label(left_frame, text="Average path length  :",font=("Helvetica", 12))
     Avg.grid(row=18, column=0)
-    nn = tk.Button(left_frame, text="Matrix ", command=lambda :calculate_metrics_wrapper())
-    nn.grid(row=18, column=1)
 
     space2 = tk.Label(left_frame,height=3)
     space2.grid(row=19, column=0)
@@ -347,15 +345,11 @@ def create_main_window():
         layoutTrree=1
         update_node_colors_and_labels()
 
-    def calculate_node_degrees():
-        calculate_node_size_degrees(ax)
-
     def update_dropdown_list():
         menu = columns_menu["menu"]
         menu.delete(0, "end")  # Clear the existing options
-        for column in half_nodes_df.columns:
+        for column in half_nodes_df.columns[1:]:  # Start from the second column
             menu.add_command(label=column, command=tk._setit(columns_var, column))
-
     def calculate_metrics_wrapper():
         matrix = calculate_metrics(G)
         n_n=matrix[0]

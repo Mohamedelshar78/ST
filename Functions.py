@@ -10,7 +10,6 @@ from networkx.algorithms.community.centrality import girvan_newman
 from sklearn.metrics.cluster import normalized_mutual_info_score, adjusted_rand_score
 
 
-
 def PageRank(G):
     # Calculate PageRank scores
     pagerank_scores = nx.pagerank(G)
@@ -132,14 +131,12 @@ def Degree_Centrality(G):
                 tree.insert("", "end", text="", values=(node,node_degrees[node], round(degree, 3)))
 
         #H = G.subgraph([n for n in G.nodes() if dc[n] >= num])
-
         ax.clear()
         nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=1000, edge_color='gray', linewidths=1, font_size=10, ax=ax)
         plt.title("Graph")
         canvas.draw()
     # Bind the search button to the filter_nodes function
     search_button.config(command=filter_nodes)
-
     # Start the Tkinter event loop
     root.mainloop()
 #===========================================================================================
@@ -149,13 +146,10 @@ def Closeness_Centrality(G):
     # Create the Tkinter window
     root = tk.Tk()
     root.title("Closeness Centrality")
-
     left_frame = tk.Frame(root)
     left_frame.pack(side="left", padx=20, pady=20, fill='both', expand=True)  # Adjust the weight parameter here
-
     right_frame = tk.Frame(root)
     right_frame.pack(side="right", padx=20, pady=20)
-
     search_label = ttk.Label(left_frame, text="Filter by Closeness centrality ")
     search_label.grid(row=1, column=0)
     search_entry = ttk.Entry(left_frame)
@@ -378,38 +372,42 @@ def visualize_clusters_gui(G, clusters,num_communities,Modularity,NMI,ARI):
 
     root.mainloop()
 #===========================================================================================
-def evaluate_clustering(G, algorithm='louvain'):
+def evaluate_clustering(graph, algorithm='louvain'):
     # Ground truth (if available)
-    ground_truth_communities = nx.get_node_attributes(G, 'communities')
-    ground_truth_labels = list(ground_truth_communities.values()) if ground_truth_communities else None
+    # Add ground truth communities as node attributes for evaluation (optional)
+    ground_truth_communities = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 1, 9: 0,
+                                10: 0, 11: 0, 12: 0, 13: 0, 14: 1, 15: 1, 16: 0, 17: 0, 18: 1, 19: 0,
+                                20: 1, 21: 0, 22: 1, 23: 1, 24: 1, 25: 1, 26: 1, 27: 1, 28: 1, 29: 1,
+                                30: 1, 31: 1, 32: 1, 33: 1}
+    nx.set_node_attributes(graph, ground_truth_communities, 'communities')
+
+    ground_truth_communitiess = nx.get_node_attributes(graph, 'communities')
+    ground_truth_labels = list(ground_truth_communities.values()) if ground_truth_communitiess else None
 
     # Detect communities
     if algorithm == 'louvain':
-        partition = community.best_partition(G)
+        partition = community.best_partition(graph)
     elif algorithm == 'girvan_newman':
-        clusters_generator = nx.algorithms.community.girvan_newman(G)
+        clusters_generator = nx.algorithms.community.girvan_newman(graph)
         partition = {node: idx for idx, cluster in enumerate(next(clusters_generator)) for node in cluster}
     elif algorithm == 'label_propagation':
-        partition = {node: idx for idx, cluster in enumerate(nx.algorithms.community.label_propagation_communities(G)) for node in cluster}
+        partition = {node: idx for idx, cluster in enumerate(nx.algorithms.community.label_propagation_communities(graph)) for node in cluster}
     else:
         raise ValueError("Unsupported algorithm. Supported algorithms are 'louvain', 'girvan_newman', and 'label_propagation'.")
 
     # Modularity (internal evaluation)
-    modularity:float = community.modularity(partition, G)
+    modularity = community.modularity(partition, graph)
+
     # External evaluation metrics
+    nmi, ari = None, None
     if ground_truth_labels:
         # NMI (Normalized Mutual Information)
         nmi = normalized_mutual_info_score(list(partition.values()), ground_truth_labels)
 
         # ARI (Adjusted Rand Index)
         ari = adjusted_rand_score(list(partition.values()), ground_truth_labels)
-    else:
-        nmi = None
-        ari = None
-    # Prepare results dictionary
-    results = modularity,nmi,ari
 
-    return results
+    return modularity, nmi, ari
 #===========================================================================================
 def get_cluster(G,algorithm='louvain'):
     if G.is_directed():
