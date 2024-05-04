@@ -18,7 +18,7 @@ def load_network(node_path, edges_path):
     nodes_df = pd.read_csv(node_path)
     edges_df = pd.read_csv(edges_path)
     global half_nodes_df
-    half_nodes_df = nodes_df.sample(frac=1, random_state=1)
+    half_nodes_df = nodes_df.sample(frac=0.8, random_state=1)
     print(half_nodes_df.head(10))
     for index, row in half_nodes_df.iterrows():
         G.add_node(row['ID'], attr_dict=row.to_dict())
@@ -233,21 +233,21 @@ def create_main_window():
     filter = tk.Label(left_frame, text="Compare  :",font=("Helvetica", 12))
     filter.grid(row=22, column=0)
 
-    options2 = ["louvain", "girvan_newman",
+    options3 = ["louvain", "girvan_newman",
                "label_propagation"]
     selected_option = tk.StringVar()
-    combobox = ttk.Combobox(left_frame, values=options2, textvariable=selected_option)
-    def combobox_selected2(event):
+    combobox = ttk.Combobox(left_frame, values=options3, textvariable=selected_option)
+    def combobox_selected3(event):
         selected_algo = selected_option.get()
-        if selected_algo == options2[0]:
+        if selected_algo == options3[0]:
             Functions.partition_graph(G)
-        elif selected_algo == options2[1]:
+        elif selected_algo == options3[1]:
             Functions.partition_graph(G,'girvan_newman')
-        elif selected_algo == options2[2]:
+        elif selected_algo == options3[2]:
             Functions.partition_graph(G,'label_propagation')
-    combobox.bind("<<ComboboxSelected>>", combobox_selected2)
+    combobox.bind("<<ComboboxSelected>>", combobox_selected3)
     combobox.grid(row=22, column=1)
-    selected_option.set(options2[0])
+    selected_option.set(options3[0])
 
 
     num_of_patrtion = tk.Label(left_frame, text="Num Of Clusters :")
@@ -257,8 +257,6 @@ def create_main_window():
     num_of_patrtion_var.set(2)
     num_of_patrtion_spinbox = tk.Spinbox(left_frame, from_=2, to=10, increment=1, textvariable=num_of_patrtion_var)
     num_of_patrtion_spinbox.grid(row=23, column=1)
-
-
 
     # Graph Partitioning and Clustering partithon
     partithon = tk.Label(left_frame, text="partithon clusters :",font=("Helvetica", 12))
