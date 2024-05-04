@@ -18,7 +18,7 @@ def load_network(node_path, edges_path):
     nodes_df = pd.read_csv(node_path)
     edges_df = pd.read_csv(edges_path)
     global half_nodes_df
-    half_nodes_df = nodes_df.sample(frac=0.1, random_state=1)
+    half_nodes_df = nodes_df.sample(frac=1, random_state=1)
     print(half_nodes_df.head(10))
     for index, row in half_nodes_df.iterrows():
         G.add_node(row['ID'], attr_dict=row.to_dict())

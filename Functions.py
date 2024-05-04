@@ -457,6 +457,7 @@ def degree_based_partitioning(graph, num_clusters):
         clusters[i % num_clusters].append(node)
 
     visualize_each_clusters(graph,clusters)
+    print(clusters)
     return clusters
 #===========================================================================================
 def modularity_based_partitioning(graph):
@@ -469,6 +470,7 @@ def modularity_based_partitioning(graph):
         clusters[i] = list(com)
 
     visualize_each_clusters(graph,clusters)
+    print(clusters)
     return clusters
 #===========================================================================================
 def spectral_clustering(graph, num_clusters):
@@ -515,6 +517,6 @@ def visualize_each_clusters(graph, clusters):
         # Embed the Matplotlib figure in a Tkinter window
         canvas = FigureCanvasTkAgg(fig, master=root)
         canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     root.mainloop()
