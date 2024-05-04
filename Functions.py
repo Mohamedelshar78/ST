@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import ttk
 import networkx as nx
+import numpy as np
+from sklearn.cluster import KMeans
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import community
 from networkx.algorithms.community.quality import modularity
@@ -438,5 +440,81 @@ def get_cluster(G,algorithm='louvain'):
     else:
         raise ValueError("Unsupported algorithm. Supported algorithms are 'louvain', 'girvan_newman', and 'label_propagation'.")
     return node_groups
+#===========================================================================================
+def degree_based_partitioning(graph, num_clusters):
+    # Calculate degree centrality for each node
+    degree_centrality = nx.degree_centrality(graph)
 
+    # Sort nodes based on degree centrality
+    sorted_nodes = sorted(degree_centrality, key=degree_centrality.get, reverse=True)
 
+    # Assign nodes to clusters based on degree centrality
+    clusters = {}
+    for i in range(num_clusters):
+        clusters[i] = []
+
+    for i, node in enumerate(sorted_nodes):
+        clusters[i % num_clusters].append(node)
+
+    visualize_each_clusters(graph,clusters)
+    return clusters
+#===========================================================================================
+def modularity_based_partitioning(graph):
+    # Perform modularity maximization
+    partition = nx.community.greedy_modularity_communities(graph)
+
+    # Convert partition format to dictionary
+    clusters = {}
+    for i, com in enumerate(partition):
+        clusters[i] = list(com)
+
+    visualize_each_clusters(graph,clusters)
+    return clusters
+#===========================================================================================
+def spectral_clustering(graph, num_clusters):
+    # Step 1: Construct the Laplacian matrix
+    laplacian_matrix = nx.laplacian_matrix(graph).toarray()
+
+    # Step 2: Compute the eigenvectors corresponding to the smallest eigenvalues
+    eigenvalues, eigenvectors = np.linalg.eigh(laplacian_matrix)
+    # Sort eigenvectors based on eigenvalues
+    sorted_indices = np.argsort(eigenvalues)
+    sorted_eigenvectors = eigenvectors[:, sorted_indices]
+    # Step 3: Use the smallest eigenvectors to embed the vertices into a lower-dimensional space
+    embedding = sorted_eigenvectors[:, :num_clusters]
+    # Step 4: Apply K-means clustering to the embedded vertices
+    kmeans = KMeans(n_clusters=num_clusters)
+    kmeans.fit(embedding)
+    # Get the cluster assignments
+    cluster_assignments = kmeans.labels_
+    # Convert cluster assignments to dictionary format
+    clusters = {}
+    for i, label in enumerate(cluster_assignments):
+        if label not in clusters:
+            clusters[label] = []
+        clusters[label].append(i)
+
+    visualize_each_clusters(graph,clusters)
+    return clusters
+#===========================================================================================
+def visualize_each_clusters(graph, clusters):
+    num_clusters = len(clusters)
+    root = tk.Tk()
+    root.title("graph partithon")
+    for i, (cluster_id, nodes) in enumerate(clusters.items()):
+        # Create a subgraph for the cluster
+        subgraph = graph.subgraph(nodes)
+        # Draw the subgraph with nodes colored by cluster
+        pos = nx.spring_layout(subgraph)
+        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        fig, ax = plt.subplots()
+        nx.draw(subgraph, pos, ax=ax, node_color=colors[cluster_id], with_labels=True)
+        ax.set_title(f"Cluster {cluster_id}")
+        ax.axis('off')
+
+        # Embed the Matplotlib figure in a Tkinter window
+        canvas = FigureCanvasTkAgg(fig, master=root)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+
+    root.mainloop()

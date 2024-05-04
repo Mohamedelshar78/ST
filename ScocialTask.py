@@ -249,6 +249,38 @@ def create_main_window():
     combobox.grid(row=22, column=1)
     selected_option.set(options2[0])
 
+
+    num_of_patrtion = tk.Label(left_frame, text="Num Of Clusters :")
+    num_of_patrtion.grid(row=23, column=0)
+
+    num_of_patrtion_var = tk.IntVar(left_frame)
+    num_of_patrtion_var.set(2)
+    num_of_patrtion_spinbox = tk.Spinbox(left_frame, from_=2, to=10, increment=1, textvariable=num_of_patrtion_var)
+    num_of_patrtion_spinbox.grid(row=23, column=1)
+
+
+
+    # Graph Partitioning and Clustering partithon
+    partithon = tk.Label(left_frame, text="partithon clusters :",font=("Helvetica", 12))
+    partithon.grid(row=24, column=0)
+
+    options2 = ["Degree-based partitioning", "Modularity-based partitioning",
+                "Spectral clustering"]
+    partithon_option = tk.StringVar()
+    combobox = ttk.Combobox(left_frame, values=options2, textvariable=partithon_option)
+    def combobox_selected2(event):
+        selected_algo = partithon_option.get()
+        num = num_of_patrtion_var.get()
+        if selected_algo == options2[0]:
+            Functions.degree_based_partitioning(G,num)
+        elif selected_algo == options2[1]:
+            Functions.modularity_based_partitioning(G)
+        elif selected_algo == options2[2]:
+            Functions.spectral_clustering(G,num)
+    combobox.bind("<<ComboboxSelected>>", combobox_selected2)
+    combobox.grid(row=24, column=1)
+    partithon_option.set(options2[0])
+
     def load_network_wrapper():
         global Matrix
         load_network(node_entry.get(), edges_entry.get())
