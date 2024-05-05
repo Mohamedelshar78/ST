@@ -499,24 +499,61 @@ def spectral_clustering(graph, num_clusters):
     visualize_each_clusters(graph,clusters)
     return clusters
 #===========================================================================================
+
+# Step 2: Partitioning based on Gender or Class
+def partition_graph_based_criatera(G, attribute='gender_or_class'):
+    partitions = {}
+    for node in G.nodes(data=True):
+        attr_val = node[1]['attr_dict'][attribute]  # Change 'gender_or_class' if needed
+        if attr_val not in partitions:
+            partitions[attr_val] = [node[0]]
+        else:
+            partitions[attr_val].append(node[0])
+    return partitions
+
+# Step 3: Visualization
 def visualize_each_clusters(graph, clusters):
-    num_clusters = len(clusters)
     root = tk.Tk()
-    root.title("graph partithon")
+    root.title("Graph Partition")
+
+    # Create a frame to contain all clusters' plots
+    frame = ttk.Frame(root)
+    frame.pack(fill=tk.BOTH, expand=True)
+
+    # Create a canvas to scroll through clusters
+    canvas = tk.Canvas(frame)
+    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    # Add a scrollbar to navigate through clusters
+    scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=canvas.yview)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    # Create a frame inside the canvas to hold the clusters' plots
+    clusters_frame = ttk.Frame(canvas)
+    canvas.create_window((0, 0), window=clusters_frame, anchor=tk.NW)
+
+    # Function to configure the canvas scroll region
+    def on_configure(event):
+        canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+
+    canvas.bind('<Configure>', on_configure)
+
+    # Loop through clusters and visualize each one
     for i, (cluster_id, nodes) in enumerate(clusters.items()):
         # Create a subgraph for the cluster
         subgraph = graph.subgraph(nodes)
         # Draw the subgraph with nodes colored by cluster
         pos = nx.spring_layout(subgraph)
-        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']  # You can add more colors if needed
         fig, ax = plt.subplots()
-        nx.draw(subgraph, pos, ax=ax, node_color=colors[cluster_id], with_labels=True)
+        nx.draw(subgraph, pos, ax=ax, node_color=colors[i % len(colors)], with_labels=True)
         ax.set_title(f"Cluster {cluster_id}")
         ax.axis('off')
 
-        # Embed the Matplotlib figure in a Tkinter window
-        canvas = FigureCanvasTkAgg(fig, master=root)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        # Embed the Matplotlib figure in the clusters_frame
+        canvas_fig = FigureCanvasTkAgg(fig, master=clusters_frame)
+        canvas_fig.draw()
+        canvas_fig.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     root.mainloop()

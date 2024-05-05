@@ -1,19 +1,26 @@
 import networkx as nx
-import numpy as np
-from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import tkinter as tk
 import pandas as pd
+import community
+import matplotlib.pyplot as plt
+from tkinter import ttk
+import tkinter as tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
+from networkx.algorithms.community import modularity
 
-node_path = r"F:\FCIS_2024\8Semester\Social\Task\nodes.csv"
-edges_path = r"F:\FCIS_2024\8Semester\Social\Task\links.csv"
+# Step 1: Read the node attributes from the first CSV file
+node_df = r"F:\FCIS_2024\8Semester\Social\Task\nodes.csv"
+
+# Step 2: Read the links from the second CSV file
+links_df = r"F:\FCIS_2024\8Semester\Social\Task\links.csv"
+
+# Step 3: Create the graph and add nodes with attributes
+G = nx.Graph()
 def load_network(node_path, edges_path):
     print('loading network...')
     nodes_df = pd.read_csv(node_path)
     edges_df = pd.read_csv(edges_path)
-    G= nx.Graph()
-    half_nodes_df = nodes_df.sample(frac=0.8, random_state=1)
+    half_nodes_df = nodes_df.sample(frac=1, random_state=1)
     print(half_nodes_df.head(10))
     for index, row in half_nodes_df.iterrows():
         G.add_node(row['ID'], attr_dict=row.to_dict())
@@ -23,101 +30,114 @@ def load_network(node_path, edges_path):
 
     return G
 
-def degree_based_partitioning(graph, num_clusters):
-    # Calculate degree centrality for each node
-    degree_centrality = nx.degree_centrality(graph)
+G= load_network(node_df,links_df)
 
-    # Sort nodes based on degree centrality
-    sorted_nodes = sorted(degree_centrality, key=degree_centrality.get, reverse=True)
+# Step 2: Partitioning based on Gender or Class
+def partition_graph(G, attribute='gender_or_class'):
+    partitions = {}
+    for node in G.nodes(data=True):
+        attr_val = node[1]['attr_dict'][attribute]  # Change 'gender_or_class' if needed
+        if attr_val not in partitions:
+            partitions[attr_val] = [node[0]]
+        else:
+            partitions[attr_val].append(node[0])
+    return partitions
 
-    # Assign nodes to clusters based on degree centrality
-    clusters = {}
-    for i in range(num_clusters):
-        clusters[i] = []
+# Step 3: Visualization
+def visualize_partitions(G, partitions):
+    pos = nx.spring_layout(G)
+    colors = ['r', 'b', 'g', 'y', 'c', 'm']  # Add more colors if needed
 
-    for i, node in enumerate(sorted_nodes):
-        clusters[i % num_clusters].append(node)
+    plt.figure(figsize=(10, 8))
+    for i, (attr_val, nodes) in enumerate(partitions.items()):
+        subgraph = G.subgraph(nodes)
+        nx.draw(subgraph, pos, node_color=colors[i % len(colors)], with_labels=True, label=attr_val)
 
-    return clusters
+    plt.title('Graph Partitioning based on Gender or Class')
+    plt.legend()
+    plt.show()
 
-def modularity_based_partitioning(graph):
-    # Perform modularity maximization
-    partition = nx.community.greedy_modularity_communities(graph)
-    # Convert partition format to dictionary
-    clusters = {}
-    for i, com in enumerate(partition):
-        clusters[i] = list(com)
-
-    return clusters
-
-def spectral_clustering(graph, num_clusters):
-    # Step 1: Construct the Laplacian matrix
-    laplacian_matrix = nx.laplacian_matrix(graph).toarray()
-    # Step 2: Compute the eigenvectors corresponding to the smallest eigenvalues
-    eigenvalues, eigenvectors = np.linalg.eigh(laplacian_matrix)
-    # Sort eigenvectors based on eigenvalues
-    sorted_indices = np.argsort(eigenvalues)
-    sorted_eigenvectors = eigenvectors[:, sorted_indices]
-    # Step 3: Use the smallest eigenvectors to embed the vertices into a lower-dimensional space
-    embedding = sorted_eigenvectors[:, :num_clusters]
-    # Step 4: Apply K-means clustering to the embedded vertices
-    kmeans = KMeans(n_clusters=num_clusters)
-    kmeans.fit(embedding)
-    # Get the cluster assignments
-    cluster_assignments = kmeans.labels_
-    # Convert cluster assignments to dictionary format
-    clusters = {}
-    for i, label in enumerate(cluster_assignments):
-        if label not in clusters:
-            clusters[label] = []
-        clusters[label].append(i)
-
-    return clusters
-
-# Example usage
-# Create a random graph
-G = load_network(node_path, edges_path)
-
-# Degree-based partitioning
-num_clusters = 2
-degree_clusters = degree_based_partitioning(G, num_clusters)
-print("Degree-based partitioning:", degree_clusters)
-
-# Modularity-based partitioning
-modularity_clusters = modularity_based_partitioning(G)
-print("Modularity-based partitioning:", modularity_clusters)
-
-# Spectral clustering
-spectral_clusters = spectral_clustering(G, num_clusters)
-print("Spectral clustering:", spectral_clusters)
-
-def visualize_clusters(graph, clusters, title):
-    num_clusters = len(clusters)
+def visualize_each_clusters(graph, clusters):
     root = tk.Tk()
-    root.title(title)
+    root.title("Graph Partition")
 
+    # Create a frame to contain all clusters' plots
+    frame = ttk.Frame(root)
+    frame.pack(fill=tk.BOTH, expand=True)
+
+    # Create a canvas to scroll through clusters
+    canvas = tk.Canvas(frame)
+    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    # Add a scrollbar to navigate through clusters
+    scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=canvas.yview)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    # Create a frame inside the canvas to hold the clusters' plots
+    clusters_frame = ttk.Frame(canvas)
+    canvas.create_window((0, 0), window=clusters_frame, anchor=tk.NW)
+
+    # Function to configure the canvas scroll region
+    def on_configure(event):
+        canvas.configure(scrollregion=canvas.bbox(tk.ALL))
+
+    canvas.bind('<Configure>', on_configure)
+
+    # Loop through clusters and visualize each one
     for i, (cluster_id, nodes) in enumerate(clusters.items()):
         # Create a subgraph for the cluster
         subgraph = graph.subgraph(nodes)
         # Draw the subgraph with nodes colored by cluster
         pos = nx.spring_layout(subgraph)
-        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']  # You can add more colors if needed
         fig, ax = plt.subplots()
-        nx.draw(subgraph, pos, ax=ax, node_color=colors[cluster_id], with_labels=True)
+        nx.draw(subgraph, pos, ax=ax, node_color=colors[i % len(colors)], with_labels=True)
         ax.set_title(f"Cluster {cluster_id}")
         ax.axis('off')
-        # Embed the Matplotlib figure in a Tkinter window
-        canvas = FigureCanvasTkAgg(fig, master=root)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+
+        # Embed the Matplotlib figure in the clusters_frame
+        canvas_fig = FigureCanvasTkAgg(fig, master=clusters_frame)
+        canvas_fig.draw()
+        canvas_fig.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     root.mainloop()
 
-# Visualize degree-based partitioning
-visualize_clusters(G, degree_clusters, "Degree-based Partitioning")
+def evaluate_clusters(clusters, graph, ground_truth=None):
+    """
+    Evaluates the clustering results using internal and external evaluation metrics.
 
-# Visualize modularity-based partitioning
-visualize_clusters(G, modularity_clusters, "Modularity-based Partitioning")
+    Args:
+        clusters (list): List of clusters, where each cluster is a list of nodes.
+        graph (networkx.Graph): The graph representing the network.
+        ground_truth (list or None): Optional ground truth labels if available.
 
-# Visualize spectral clustering
-visualize_clusters(G, spectral_clusters, "Spectral Clustering")
+    Returns:
+        tuple: A tuple containing the values of modularity, normalized mutual information (NMI),
+               Rand Index (RI), and Adjusted Rand Index (ARI).
+    """
+    # Calculate Modularity
+    modularity_value = modularity(graph, clusters)
+
+    # Calculate NMI (if ground truth is available)
+    nmi_value = None
+    if ground_truth is not None:
+        nmi_value = normalized_mutual_info_score(ground_truth, clusters)
+
+    # Calculate RI and ARI (if ground truth is available)
+    ri_value, ari_value = None, None
+    if ground_truth is not None:
+        # Convert cluster labels to a format compatible with the metrics
+        cluster_labels = [0] * graph.number_of_nodes()
+        for i, cluster in enumerate(clusters):
+            for node in cluster:
+                cluster_labels[node] = i
+        ri_value = adjusted_rand_score(ground_truth, cluster_labels)
+        ari_value = ri_value
+
+    return modularity_value, nmi_value, ri_value, ari_value
+
+p = partition_graph(G, 'Class')
+print(p)
+x = evaluate_clusters(p,G)
+print(x)

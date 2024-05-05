@@ -18,7 +18,7 @@ def load_network(node_path, edges_path):
     nodes_df = pd.read_csv(node_path)
     edges_df = pd.read_csv(edges_path)
     global half_nodes_df
-    half_nodes_df = nodes_df.sample(frac=0.8, random_state=1)
+    half_nodes_df = nodes_df.sample(frac=1, random_state=1)
     print(half_nodes_df.head(10))
     for index, row in half_nodes_df.iterrows():
         G.add_node(row['ID'], attr_dict=row.to_dict())
@@ -262,8 +262,8 @@ def create_main_window():
     partithon = tk.Label(left_frame, text="partithon clusters :",font=("Helvetica", 12))
     partithon.grid(row=24, column=0)
 
-    options2 = ["Degree-based partitioning", "Modularity-based partitioning",
-                "Spectral clustering"]
+    options2 = ["Degree-based partitioning", "Class based partitioning",
+                "Gender based"]
     partithon_option = tk.StringVar()
     combobox = ttk.Combobox(left_frame, values=options2, textvariable=partithon_option)
     def combobox_selected2(event):
@@ -272,9 +272,11 @@ def create_main_window():
         if selected_algo == options2[0]:
             Functions.degree_based_partitioning(G,num)
         elif selected_algo == options2[1]:
-            Functions.modularity_based_partitioning(G)
+            p = Functions.partition_graph_based_criatera(G,'Class')
+            Functions.visualize_each_clusters(G,p)
         elif selected_algo == options2[2]:
-            Functions.spectral_clustering(G,num)
+            p = Functions.partition_graph_based_criatera(G,'Gender')
+            Functions.visualize_each_clusters(G,p)
     combobox.bind("<<ComboboxSelected>>", combobox_selected2)
     combobox.grid(row=24, column=1)
     partithon_option.set(options2[0])
