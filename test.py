@@ -20,7 +20,7 @@ def compare_community_detection(G,algorithm):
 
     elif algorithm == 'Greedy_Modularity':
         # Louvain algorithm
-        louvain_communities = greedy_modularity_communities(G)
+        louvain_communities = nx.community.louvain_communities(G)
         louvain_modularity = modularity(G, louvain_communities)
         louvain_conductance = [conductance(G, c) for c in louvain_communities]
         results['Louvain'] = {'Communities': louvain_communities,
@@ -60,4 +60,4 @@ def visualize_communities(G, communities,tittel):
 
 # Example usage
 G = nx.karate_club_graph()
-results = compare_community_detection(G,'Girvan_Newman')
+results = compare_community_detection(G,'Greedy_Modularity')

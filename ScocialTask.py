@@ -40,21 +40,38 @@ def calculate_metrics(graph):
     print('Number of edges:', nx.number_of_edges(graph))
     Num_edge = nx.number_of_edges(graph)
 
-    degree_sequence = [d for n, d in graph.degree]
-    degree_count = nx.degree_histogram(graph)
-
     # Calculate clustering coefficient
     clustering_coefficient = nx.average_clustering(graph)
 
     # Average path length
     try:
-        average_path_length = nx.average_shortest_path_length(graph)
+        if nx.is_directed(G):
+            average_path_length = nx.average_shortest_path_length(G.to_undirected())
+        else:
+            average_path_length = nx.average_shortest_path_length(graph)
     except nx.NetworkXError:
         print("Graph is not connected. Cannot compute average shortest path length.")
         average_path_length = None
 
     print('Average path length:', average_path_length)
     print('Clustering Coefficients:', clustering_coefficient)
+
+    # Basic graph properties
+    num_nodes = len(G.nodes)
+    num_edges = len(G.edges)
+    avg_degree = sum(dict(G.degree()).values()) / num_nodes
+    density = nx.density(G)
+
+    # Degree distribution
+    degree_sequence = sorted([d for n, d in G.degree()], reverse=True)
+    degree_count = nx.degree_histogram(G)
+
+    # Plot degree distribution
+    plt.bar(range(len(degree_count)), degree_count)
+    plt.title("Degree Distribution")
+    plt.xlabel("Degree")
+    plt.ylabel("Count")
+    plt.show()
 
     return Num_edge, Num_node, clustering_coefficient, average_path_length
 
@@ -133,7 +150,7 @@ def create_main_window():
     node_size_label.grid(row=6, column=0)
 
     node_size_var = tk.IntVar(left_frame)
-    node_size_var.set(100)
+    node_size_var.set(300)
     node_size_spinbox = tk.Spinbox(left_frame, from_=1, to=1000000, increment=100, textvariable=node_size_var)
     node_size_spinbox.grid(row=6, column=1)
 

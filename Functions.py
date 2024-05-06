@@ -282,7 +282,7 @@ def compare_community_detection(G,algorithm):
 
     elif algorithm == 'Greedy_Modularity':
         # Louvain algorithm
-        louvain_communities = greedy_modularity_communities(G)
+        louvain_communities = nx.community.louvain_communities(G)
         louvain_modularity = modularity(G, louvain_communities)
         louvain_conductance = [conductance(G, c) for c in louvain_communities]
         results['Louvain'] = {'Communities': louvain_communities,
@@ -331,7 +331,7 @@ def compare_community_detection_intable(G):
                                 'Conductance': gn_conductance}
 
     # Louvain algorithm
-    louvain_communities = greedy_modularity_communities(G)
+    louvain_communities = nx.community.louvain_communities(G)
     louvain_modularity = modularity(G, louvain_communities)
     louvain_conductance = [conductance(G, c) for c in louvain_communities]
     results['Louvain'] = {'Communities': louvain_communities,
