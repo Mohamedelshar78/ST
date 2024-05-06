@@ -9,7 +9,7 @@ from tkinter import filedialog
 import Functions
 
 G = nx.DiGraph()
-pos = nx.random_layout(G)
+pos = nx.spring_layout(G)
 Matrix = list
 layoutTrree = 1
 
@@ -233,18 +233,18 @@ def create_main_window():
     filter = tk.Label(left_frame, text="Compare  :",font=("Helvetica", 12))
     filter.grid(row=22, column=0)
 
-    options3 = ["louvain", "girvan_newman",
+    options3 = ["Girvan_Newman", "Greedy_Modularity",
                "label_propagation"]
     selected_option = tk.StringVar()
     combobox = ttk.Combobox(left_frame, values=options3, textvariable=selected_option)
     def combobox_selected3(event):
         selected_algo = selected_option.get()
         if selected_algo == options3[0]:
-            Functions.partition_graph(G)
+            x= Functions.compare_community_detection(G,selected_algo)
         elif selected_algo == options3[1]:
-            Functions.partition_graph(G,'girvan_newman')
+            x= Functions.compare_community_detection(G,selected_algo)
         elif selected_algo == options3[2]:
-            Functions.partition_graph(G,'label_propagation')
+            x= Functions.compare_community_detection(G,selected_algo)
     combobox.bind("<<ComboboxSelected>>", combobox_selected3)
     combobox.grid(row=22, column=1)
     selected_option.set(options3[0])
@@ -280,6 +280,9 @@ def create_main_window():
     combobox.bind("<<ComboboxSelected>>", combobox_selected2)
     combobox.grid(row=24, column=1)
     partithon_option.set(options2[0])
+
+    com_button = tk.Button(left_frame, text="compare ",bd=5,bg="Green",font=("Helvetica", 9))
+    com_button.grid(row=25,column=2)
 
     def load_network_wrapper():
         global Matrix
@@ -344,12 +347,12 @@ def create_main_window():
         node_sizes_attr = nx.get_node_attributes(G, 'node_size')
         if node_sizes_attr:
             node_sizes.update(node_sizes_attr)
-
         edge_thickness = float(edge_size_var.get())
         ax.clear()
-        nx.draw(G, pos, with_labels=True, labels=labels, node_color=node_colors,
-                node_size=[node_sizes[node] for node in G.nodes()],
-                edge_color=edge_color_var.get(), font_size=10, width=edge_thickness, ax=ax)
+
+        nx.draw(G, pos, labels=labels, node_color=node_colors,
+                node_size=[node_sizes[node] for node in G.nodes()],alpha=0.9,
+                edge_color=edge_color_var.get(), font_size=10, width=1, ax=ax)
         canvas.draw()
         print("Canvas updated")
 
@@ -366,11 +369,11 @@ def create_main_window():
     def apply_tree_layout():
         global layoutTrree
         global pos
-        pos=nx.drawing.spring_layout(G,dim=3)
+        pos=nx.drawing.spring_layout(G,dim=2)
         layoutTrree=3
         update_node_colors_and_labels()
 
-    def apply_tree_layout():
+    def apply_Random_layout():
         global layoutTrree
         global pos
         pos=nx.drawing.random_layout(G)
@@ -399,7 +402,8 @@ def create_main_window():
     submit_button.config(command=lambda: submit_changes())
     fr_layout_button.config(command=lambda: apply_fr_layout())
     tree_layout_button.config(command=lambda: apply_tree_layout())
-    random_layout_button.config(command=lambda: apply_tree_layout())
+    random_layout_button.config(command=lambda: apply_Random_layout())
+    com_button.config(command=lambda :Functions.display_results_in_table(G))
     root.mainloop()
 
 # Call the function to create the main window

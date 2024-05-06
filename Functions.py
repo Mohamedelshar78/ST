@@ -2,13 +2,12 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import ttk
 import networkx as nx
-import numpy as np
-from sklearn.cluster import KMeans
+from networkx.algorithms.cuts import conductance
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import community
+from networkx.algorithms.community import girvan_newman, greedy_modularity_communities
+from networkx.algorithms.community import asyn_lpa_communities
 from networkx.algorithms.community.quality import modularity
-from community import community_louvain
-from networkx.algorithms.community.centrality import girvan_newman
 from sklearn.metrics.cluster import normalized_mutual_info_score, adjusted_rand_score
 
 
@@ -36,7 +35,9 @@ def PageRank(G):
     pos = nx.spring_layout(G)
     fig, ax = plt.subplots(figsize=(12, 10))
     node_size = [pagerank_scores[node] * 1000 for node in G.nodes()]
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+    nx.draw(G, pos, node_color=list(pagerank_scores.values()), with_labels=True,cmap=plt.cm.Reds, arrows=G.is_directed())
+
+    #nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
     plt.title("Graph")
     canvas = FigureCanvasTkAgg(fig, master=right_frame)
     canvas.draw()
@@ -103,8 +104,9 @@ def Degree_Centrality(G):
     fig, ax = plt.subplots(figsize=(12, 10))
 
     node_size = [dc[node] * 1000 for node in G.nodes()]
+    nx.draw(G, pos, node_color=list(dc.values()), with_labels=True,cmap=plt.cm.Reds, arrows=G.is_directed())
 
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+    #nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
     plt.title("Graph")
 
     canvas = FigureCanvasTkAgg(fig, master=right_frame)
@@ -125,7 +127,7 @@ def Degree_Centrality(G):
 
         # Get the filter threshold
         num = float(search_entry.get())
-        node_colors = ['skyblue' if dc[node] >= num else 'lightgray' for node in G.nodes()]
+        node_colors = ['red' if dc[node] >= num else 'lightgray' for node in G.nodes()]
 
         # Filter the nodes based on the threshold
         for node, degree in dc.items():
@@ -167,7 +169,9 @@ def Closeness_Centrality(G):
     node_size = [cc[node] * 1000 for node in G.nodes()]
     pos = nx.spring_layout(G)
     fig, ax = plt.subplots(figsize=(12, 10))
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+    nx.draw(G, pos, node_color=list(cc.values()), with_labels=True,cmap=plt.cm.Reds, arrows=G.is_directed())
+
+    #nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
     plt.title("Graph")
 
     canvas = FigureCanvasTkAgg(fig, master=right_frame)
@@ -185,7 +189,7 @@ def Closeness_Centrality(G):
         tree.delete(*tree.get_children())
         # Get the filter threshold
         num = float(search_entry.get())
-        node_colors = ['skyblue' if cc[node] >= num else 'lightgray' for node in G.nodes()]
+        node_colors = ['red' if cc[node] >= num else 'lightgray' for node in G.nodes()]
         # Filter the nodes based on the threshold
         for node, degree in cc.items():
             if degree >= num:
@@ -227,7 +231,8 @@ def Betweenness_Centrality(G):
     pos = nx.spring_layout(G)
     fig, ax = plt.subplots(figsize=(12, 10))
     node_size = [bc[node] * 1000 for node in G.nodes()]
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+    nx.draw(G, pos, node_color=list(bc.values()), with_labels=True, cmap=plt.cm.Blues, arrows=G.is_directed())
+    #nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
     plt.title("Graph")
 
     canvas = FigureCanvasTkAgg(fig, master=right_frame)
@@ -244,7 +249,7 @@ def Betweenness_Centrality(G):
         # Get the filter threshold
         num = float(search_entry.get())
         # Initialize colors for nodes
-        node_colors = ['skyblue' if bc[node] >= num else 'lightgray' for node in G.nodes()]
+        node_colors = ['red' if bc[node] >= num else 'lightgray' for node in G.nodes()]
 
         # Filter the nodes based on the threshold
         for source, target in G.edges():
@@ -254,126 +259,87 @@ def Betweenness_Centrality(G):
 
         #H = G.subgraph([n for n in G.nodes() if bc[n] >= num])
         ax.clear()
-        nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=node_size, edge_color='gray', linewidths=1, font_size=10, ax=ax)
+        nx.draw(G, pos, with_labels=True, node_color=node_colors, node_size=500, edge_color='gray', linewidths=1, font_size=10, ax=ax)
         plt.title("Graph")
         canvas.draw()
     search_button.config(command=filter_nodes)
     # Start the Tkinter event loop
     root.mainloop()
+
 #===========================================================================================
-def compare_community_detection(G):
-    print('start compare community detection')
-    if G.number_of_edges() == 0:
-        print("Error: Graph has no edges.")
-        return
-    if G.is_directed():
-        G=nx.to_undirected(G)
-    # Girvan Newman Algorithm
-    girvan_newman_communities_generator = nx.algorithms.community.girvan_newman(G)
-    girvan_newman_communities = next(girvan_newman_communities_generator)
-    girvan_newman_modularity = nx.algorithms.community.quality.modularity(G, girvan_newman_communities)
+def compare_community_detection(G,algorithm):
+    # Initialize dictionary to store results
+    results = {}
 
-    # Louvain Algorithm
-    louvain_communities = community_louvain.best_partition(G)
-    louvain_communities_sets = {}
-    for node, community in louvain_communities.items():
-        if community not in louvain_communities_sets:
-            louvain_communities_sets[community] = set()
-        louvain_communities_sets[community].add(node)
-    louvain_modularity = modularity(G, list(louvain_communities_sets.values()))
-    # Display results in GUI
-    root = tk.Tk()
-    root.title("Community Detection Comparison")
+    if algorithm == 'Girvan_Newman':
+        # Girvan Newman algorithm
+        gn_communities = tuple(sorted(c) for c in next(girvan_newman(G)))
+        gn_modularity = modularity(G, gn_communities)
+        gn_conductance = [conductance(G, c) for c in gn_communities]
+        results['Girvan Newman'] = {'Communities': gn_communities,
+                                    'Modularity': gn_modularity,
+                                    'Conductance': gn_conductance}
 
-    # Create labels and display results
-    label_girvan_newman = ttk.Label(root, text="Girvan Newman Algorithm",font=("Helvetica", 10))
-    label_girvan_newman.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+    elif algorithm == 'Greedy_Modularity':
+        # Louvain algorithm
+        louvain_communities = greedy_modularity_communities(G)
+        louvain_modularity = modularity(G, louvain_communities)
+        louvain_conductance = [conductance(G, c) for c in louvain_communities]
+        results['Louvain'] = {'Communities': louvain_communities,
+                              'Modularity': louvain_modularity,
+                              'Conductance': louvain_conductance}
+    else:
+        # Label Propagation algorithm
+        lpa_communities = list(asyn_lpa_communities(G))
+        lpa_modularity = modularity(G, lpa_communities)
+        lpa_conductance = [conductance(G, c) for c in lpa_communities]
+        results['Label Propagation'] = {'Communities': lpa_communities,
+                                        'Modularity': lpa_modularity,
+                                        'Conductance': lpa_conductance}
+    for algo, data in results.items():
+        print(f"Algorithm: {algo}")
+        print(f"Number of Communities: {len(data['Communities'])}")
+        print(f"Modularity: {data['Modularity']}")
+        print("Conductance of each cluster:")
+        for i, conductance_val in enumerate(data['Conductance']):
+            print(f"Cluster {i+1}: {conductance_val:.5f}")
+        print()
+        visualize_communities(G,data['Communities'],algorithm)
 
-    label_girvan_newman_num_communities = ttk.Label(root, font=("Helvetica", 12),text=f"Number of Communities: {len(girvan_newman_communities)}")
-    label_girvan_newman_num_communities.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-
-    label_girvan_newman_modularity = ttk.Label(root,font=("Helvetica", 10), text=f"Modularity: {girvan_newman_modularity}")
-    label_girvan_newman_modularity.grid(row=2, column=0, padx=5, pady=5, sticky="w")
-
-    label_louvain = ttk.Label(root, text="Louvain Algorithm",font=("Helvetica", 10))
-    label_louvain.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-
-    label_louvain_num_communities = ttk.Label(root, font=("Helvetica", 10),text=f"Number of Communities: {len(louvain_communities_sets)}")
-    label_louvain_num_communities.grid(row=1, column=1, padx=5, pady=5, sticky="w")
-
-    label_louvain_modularity = ttk.Label(root, font=("Helvetica", 10),text=f"Modularity: {louvain_modularity}")
-    label_louvain_modularity.grid(row=2, column=1, padx=5, pady=5, sticky="w")
-
-    # Draw the graph
-    fig, ax = plt.subplots(figsize=(6, 4))
+# Visualize the graph with community detection results
+def visualize_communities(G, communities,tittel):
     pos = nx.spring_layout(G)
-    nx.draw(G, pos, ax=ax, with_labels=True, node_color='skyblue', node_size=200, edge_color='gray')
-    ax.set_title("Graph")
-    canvas = FigureCanvasTkAgg(fig, master=root)
-    canvas.draw()
-    canvas.get_tk_widget().grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+    plt.figure(figsize=(10, 8),)
+    colors = ['r', 'g', 'b', 'y', 'c', 'm']
+    for i, comm in enumerate(communities):
+        nx.draw_networkx_nodes(G, pos, nodelist=comm, node_color=colors[i % len(colors)], node_size=200, alpha=0.9)
+        nx.draw_networkx_edges(G, pos, alpha=0.5)
 
-    root.mainloop()
-#===========================================================================================
-def partition_graph(G, algorithm='louvain'):
-    if nx.is_directed(G):
-        G=nx.to_undirected(G)
+    plt.title(tittel)
+    plt.show()
 
-    if G.number_of_edges() == 0:
-        print("Error: Graph has no edges.")
-        return
-    clusters = get_cluster(G, algorithm)
-    com=len(clusters)
-    results = evaluate_clustering(G,algorithm)
-    print(results)
-    visualize_clusters_gui(G,clusters,com,results[0],results[1],results[2])
-#===========================================================================================
-def visualize_clusters(G, clusters):
-    if nx.is_directed(G):
-        G=nx.to_undirected(G)
-    # Convert sets to lists
-    clusters = [list(cluster) for cluster in clusters]
-    node_to_cluster = {node: cluster_idx for cluster_idx, cluster in enumerate(clusters) for node in cluster}
-    colors = [node_to_cluster[node] for node in G.nodes()]
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos,with_labels=True ,node_color=colors,node_size=1000,font_size=10, edge_color='gray' ,cmap=plt.cm.tab20)
-#===========================================================================================
-def visualize_clusters_gui(G, clusters,num_communities,Modularity,NMI,ARI):
-    if nx.is_directed(G):
-        G=nx.to_undirected(G)
-    root = tk.Tk()
-    root.title("Graph Clustering Visualization")
-    left_frame = tk.Frame(root)
-    left_frame.pack(side="left", padx=20, pady=20, fill='both')  # Adjust the weight parameter here
+def compare_community_detection_intable(G):
+    # Initialize dictionary to store results
+    results = {}
 
-    right_frame = tk.Frame(root)
-    right_frame.pack(side="right", padx=20, pady=20)
+    # Girvan Newman algorithm
+    gn_communities = tuple(sorted(c) for c in next(girvan_newman(G)))
+    gn_modularity = modularity(G, gn_communities)
+    gn_conductance = [conductance(G, c) for c in gn_communities]
+    results['Girvan Newman'] = {'Communities': gn_communities,
+                                'Modularity': gn_modularity,
+                                'Conductance': gn_conductance}
 
-    space = tk.Label(left_frame,height=5)
-    space.grid(row=1, column=0)
+    # Louvain algorithm
+    louvain_communities = greedy_modularity_communities(G)
+    louvain_modularity = modularity(G, louvain_communities)
+    louvain_conductance = [conductance(G, c) for c in louvain_communities]
+    results['Louvain'] = {'Communities': louvain_communities,
+                          'Modularity': louvain_modularity,
+                          'Conductance': louvain_conductance}
 
-    number_Nodes = tk.Label(left_frame, text=f"Number Of Comunity  : {num_communities} ",width=40,height=1,font=("Helvetica", 12))
-    number_Nodes.grid(row=1, column=0)
+    return results
 
-    number_Edges = tk.Label(left_frame, text=f"Modularity  : {Modularity} ",font=("Helvetica", 12))
-    number_Edges.grid(row=3, column=0)
-
-    number_Edges = tk.Label(left_frame, text=f"NMI  : {NMI} ",font=("Helvetica", 12))
-    number_Edges.grid(row=4, column=0)
-
-    number_Edges = tk.Label(left_frame, text=f"ARI  : {ARI} ",font=("Helvetica", 12))
-    number_Edges.grid(row=5, column=0)
-
-    fig, ax = plt.subplots()
-    visualize_clusters(G, clusters)
-    canvas = FigureCanvasTkAgg(fig, master=right_frame)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-    quit_button = tk.Button(root, text="Quit", command=lambda: root.destroy())
-    quit_button.pack(side=tk.BOTTOM)
-
-    root.mainloop()
 #===========================================================================================
 def evaluate_clustering(graph, algorithm='louvain'):
 
@@ -415,31 +381,61 @@ def evaluate_clustering(graph, algorithm='louvain'):
 
     return modularity, nmi, ari
 #===========================================================================================
-def get_cluster(G,algorithm='louvain'):
-    if G.is_directed():
-        G=nx.to_undirected(G)
+def get_cluster(G, algorithm='louvain'):
     if G.number_of_edges() == 0:
         print("Error: Graph has no edges.")
         return
+
     if algorithm == 'louvain':
-        # Girvan Newman Algorithm
-        communities = girvan_newman(G)
-        node_groups = []
-        for com in next(communities):
-            node_groups.append(list(com))
-
+        communities = community.best_partition(G)
     elif algorithm == 'girvan_newman':
-        # Girvan Newman Algorithm
         communities = girvan_newman(G)
-        node_groups = []
-        for com in next(communities):
-            node_groups.append(list(com))
     elif algorithm == 'label_propagation':
-        node_groups = list(nx.algorithms.community.label_propagation_communities(G))
-
+        communities = nx.algorithms.community.label_propagation_communities(G)
     else:
         raise ValueError("Unsupported algorithm. Supported algorithms are 'louvain', 'girvan_newman', and 'label_propagation'.")
-    return node_groups
+
+
+    # Visualize the graph with node colors representing communities
+    plt.figure(figsize=(8, 6))
+    pos = nx.spring_layout(G)  # Positions for all nodes
+    cmap = plt.cm.get_cmap('viridis', max(communities.values()) + 1)
+    nx.draw_networkx_nodes(G, pos, node_size=100, node_color=list(communities.values()), cmap=cmap)
+    nx.draw_networkx_edges(G, pos, alpha=0.5)
+    plt.title('Graph with Communities')
+    plt.colorbar(label='Community')
+    plt.axis('off')
+    plt.show()
+
+    return communities
+
+def display_results_in_table(G):
+    results = compare_community_detection_intable(G)
+    root = tk.Tk()
+    root.title("Community Detection Results")
+
+    columns = ('Algorithm', 'Num Communities', 'Modularity', 'Conductance')
+
+    tree = ttk.Treeview(root, columns=columns, show='headings')
+
+    for col in columns:
+        tree.heading(col, text=col)
+
+    for algo, data in results.items():
+        num_communities = len(data['Communities'])
+        modularity_val = data['Modularity']
+        conductance_vals = data['Conductance']
+        for i, conductance_val in enumerate(conductance_vals):
+            tree.insert('', 'end', values=(algo, num_communities, modularity_val, conductance_val))
+
+    tree.pack()
+    root.mainloop()
+
+
+
+
+
+
 #===========================================================================================
 def degree_based_partitioning(graph, num_clusters):
     # Calculate degree centrality for each node
@@ -458,45 +454,6 @@ def degree_based_partitioning(graph, num_clusters):
 
     visualize_each_clusters(graph,clusters)
     print(clusters)
-    return clusters
-#===========================================================================================
-def modularity_based_partitioning(graph):
-    # Perform modularity maximization
-    partition = nx.community.greedy_modularity_communities(graph)
-
-    # Convert partition format to dictionary
-    clusters = {}
-    for i, com in enumerate(partition):
-        clusters[i] = list(com)
-
-    visualize_each_clusters(graph,clusters)
-    print(clusters)
-    return clusters
-#===========================================================================================
-def spectral_clustering(graph, num_clusters):
-    # Step 1: Construct the Laplacian matrix
-    laplacian_matrix = nx.laplacian_matrix(graph).toarray()
-
-    # Step 2: Compute the eigenvectors corresponding to the smallest eigenvalues
-    eigenvalues, eigenvectors = np.linalg.eigh(laplacian_matrix)
-    # Sort eigenvectors based on eigenvalues
-    sorted_indices = np.argsort(eigenvalues)
-    sorted_eigenvectors = eigenvectors[:, sorted_indices]
-    # Step 3: Use the smallest eigenvectors to embed the vertices into a lower-dimensional space
-    embedding = sorted_eigenvectors[:, :num_clusters]
-    # Step 4: Apply K-means clustering to the embedded vertices
-    kmeans = KMeans(n_clusters=num_clusters)
-    kmeans.fit(embedding)
-    # Get the cluster assignments
-    cluster_assignments = kmeans.labels_
-    # Convert cluster assignments to dictionary format
-    clusters = {}
-    for i, label in enumerate(cluster_assignments):
-        if label not in clusters:
-            clusters[label] = []
-        clusters[label].append(i)
-
-    visualize_each_clusters(graph,clusters)
     return clusters
 #===========================================================================================
 
